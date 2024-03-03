@@ -22,7 +22,7 @@ def points_inside_contour(points, contour):
     Return false if all of the points are outside of the contour
     """
     for x, y in points:
-        if cv2.pointPolygonTest(contour, (x, y), False) == 1.0:
+        if cv2.pointPolygonTest(contour, (int(x), int(y)), False) == 1.0:
             return True
     return False
 

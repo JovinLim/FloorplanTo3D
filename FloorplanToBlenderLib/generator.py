@@ -49,7 +49,6 @@ class Generator:
         """
         if len(verts) == 0:
             return [0, 0, 0]
-
         poslist = transform.verts_to_poslist(verts)
         high = [0, 0, 0]
         low = poslist[0]
@@ -129,32 +128,47 @@ class Wall(Generator):
         # remove walls outside of contour
         boxes = calculate.remove_walls_not_in_contour(boxes, contour)
         # Convert boxes to verts and faces, vertically
-        self.verts, self.faces, wall_amount = transform.create_nx4_verts_and_faces(
+        # self.verts, self.faces, wall_amount = transform.create_nx4_verts_and_faces(
+        #     boxes=boxes,
+        #     height=self.height,
+        #     scale=self.scale,
+        #     pixelscale=self.pixelscale,
+        # )
+        self.verts, wall_amount = transform.create_2d_face_verts(
             boxes=boxes,
             height=self.height,
             scale=self.scale,
             pixelscale=self.pixelscale,
         )
+
 
         if info:
             print("Walls created : ", wall_amount)
 
+        walls = []
+        for wv in range(len(self.verts)):
+            walls.append({
+                "verts": self.verts[wv],
+                "height":self.height
+            })
+
         # One solution to get data to blender is to write and read from file.
-        IO.save_to_file(self.path + const.WALL_VERTICAL_VERTS, self.verts, info)
-        IO.save_to_file(self.path + const.WALL_VERTICAL_FACES, self.faces, info)
+        IO.save_to_file(self.path + const.WALL_VERTICAL_VERTS, walls, info)
+        # IO.save_to_file(self.path + const.WALL_VERTICAL_VERTS, self.verts, info)
+        # IO.save_to_file(self.path + const.WALL_VERTICAL_FACES, self.faces, info)
 
         # Same but horizontally
-        self.verts, self.faces, wall_amount = transform.create_4xn_verts_and_faces(
-            boxes=boxes,
-            height=self.height,
-            scale=self.scale,
-            pixelscale=self.pixelscale,
-            ground=True,
-        )
-
+        # self.verts, self.faces, wall_amount = transform.create_4xn_verts_and_faces(
+        #     boxes=boxes,
+        #     height=self.height,
+        #     scale=self.scale,
+        #     pixelscale=self.pixelscale,
+        #     ground=True,
+        # )
+        
         # One solution to get data to blender is to write and read from file.
-        IO.save_to_file(self.path + const.WALL_HORIZONTAL_VERTS, self.verts, info)
-        IO.save_to_file(self.path + const.WALL_HORIZONTAL_FACES, self.faces, info)
+        # IO.save_to_file(self.path + const.WALL_HORIZONTAL_VERTS, self.verts, info)
+        # IO.save_to_file(self.path + const.WALL_HORIZONTAL_FACES, self.faces, info)
 
         return self.get_shape(self.verts)
 
@@ -338,59 +352,92 @@ class Window(Generator):
     def generate(self, gray, info=False):
         windows = detect.windows(self.image_path, self.scale_factor)
 
+
+
         # Create verts for window, vertical
-        v, self.faces, window_amount1 = transform.create_nx4_verts_and_faces(
+        # v, self.faces, window_amount1 = transform.create_nx4_verts_and_faces(
+        #     boxes=windows,
+        #     height=const.WINDOW_MIN_MAX_GAP[0],
+        #     scale=self.scale,
+        #     pixelscale=self.pixelscale,
+        #     ground=0,
+        # )  # create low piece
+
+        self.verts, window_amount1 = transform.create_2d_face_verts(
             boxes=windows,
             height=const.WINDOW_MIN_MAX_GAP[0],
             scale=self.scale,
             pixelscale=self.pixelscale,
-            ground=0,
-        )  # create low piece
-        v2, self.faces, window_amount2 = transform.create_nx4_verts_and_faces(
+            ground=0
+        )
+
+        window_walls = []
+        for wv in range(len(self.verts)):
+            window_walls.append({
+                "verts": self.verts[wv],
+                "height":const.WINDOW_MIN_MAX_GAP[0]
+            })
+
+        # v2, self.faces, window_amount2 = transform.create_nx4_verts_and_faces(
+        #     boxes=windows,
+        #     height=self.height,
+        #     scale=self.scale,
+        #     pixelscale=self.pixelscale,
+        #     ground=const.WINDOW_MIN_MAX_GAP[1],
+        # )  # create higher piece
+
+        v2, window_amount2 = transform.create_2d_face_verts(
             boxes=windows,
             height=self.height,
             scale=self.scale,
             pixelscale=self.pixelscale,
-            ground=const.WINDOW_MIN_MAX_GAP[1],
-        )  # create higher piece
+            ground=const.WINDOW_MIN_MAX_GAP[1]
+        )
 
-        self.verts = v
+        # self.verts = v
         self.verts.extend(v2)
         parts_per_window = 2
-        window_amount = len(v) / parts_per_window
+        window_amount = len(self.verts) / parts_per_window
 
         if info:
             print("Windows created : ", int(window_amount))
 
-        IO.save_to_file(self.path + const.WINDOW_VERTICAL_VERTS, self.verts, info)
-        IO.save_to_file(self.path + const.WINDOW_VERTICAL_FACES, self.faces, info)
+        for wv in range(len(self.verts)):
+            window_walls.append({
+                "verts": self.verts[wv],
+                "height":self.height - const.WINDOW_MIN_MAX_GAP[1]
+            })
+
+        IO.save_to_file(self.path + const.WINDOW_VERTICAL_VERTS, window_walls, info)
+        # IO.save_to_file(self.path + const.WINDOW_VERTICAL_VERTS, self.verts, info)
+        # IO.save_to_file(self.path + const.WINDOW_VERTICAL_FACES, self.faces, info)
 
         # horizontal
 
-        v, f, _ = transform.create_4xn_verts_and_faces(
-            boxes=windows,
-            height=self.height,
-            scale=self.scale,
-            pixelscale=self.pixelscale,
-            ground=True,
-            ground_height=const.WALL_GROUND,
-        )
-        v2, f2, _ = transform.create_4xn_verts_and_faces(
-            boxes=windows,
-            height=const.WINDOW_MIN_MAX_GAP[0],
-            scale=self.scale,
-            pixelscale=self.pixelscale,
-            ground=True,
-            ground_height=const.WINDOW_MIN_MAX_GAP[1],
-        )
+        # v, f, _ = transform.create_4xn_verts_and_faces(
+        #     boxes=windows,
+        #     height=self.height,
+        #     scale=self.scale,
+        #     pixelscale=self.pixelscale,
+        #     ground=True,
+        #     ground_height=const.WALL_GROUND,
+        # )
+        # v2, f2, _ = transform.create_4xn_verts_and_faces(
+        #     boxes=windows,
+        #     height=const.WINDOW_MIN_MAX_GAP[0],
+        #     scale=self.scale,
+        #     pixelscale=self.pixelscale,
+        #     ground=True,
+        #     ground_height=const.WINDOW_MIN_MAX_GAP[1],
+        # )
 
-        self.verts = v
-        self.verts.extend(v2)
-        self.faces = f
-        self.faces.extend(f2)
+        # self.verts = v
+        # self.verts.extend(v2)
+        # self.faces = f
+        # self.faces.extend(f2)
 
         # One solution to get data to blender is to write and read from file.
-        IO.save_to_file(self.path + const.WINDOW_HORIZONTAL_VERTS, self.verts, info)
-        IO.save_to_file(self.path + const.WINDOW_HORIZONTAL_FACES, self.faces, info)
+        # IO.save_to_file(self.path + const.WINDOW_HORIZONTAL_VERTS, self.verts, info)
+        # IO.save_to_file(self.path + const.WINDOW_HORIZONTAL_FACES, self.faces, info)
 
         return self.get_shape(self.verts)

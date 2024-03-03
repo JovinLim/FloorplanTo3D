@@ -1,4 +1,5 @@
 import bpy
+import bmesh
 import numpy as np
 import json
 import sys
@@ -251,116 +252,211 @@ def create_floorplan(base_path, program_path, name=None):
 
     if (
         os.path.isfile(path_to_wall_vertical_verts_file + ".txt")
-        and os.path.isfile(path_to_wall_vertical_faces_file + ".txt")
-        and os.path.isfile(path_to_wall_horizontal_verts_file + ".txt")
-        and os.path.isfile(path_to_wall_horizontal_faces_file + ".txt")
+        # and os.path.isfile(path_to_wall_vertical_faces_file + ".txt")
+        # and os.path.isfile(path_to_wall_horizontal_verts_file + ".txt")
+        # and os.path.isfile(path_to_wall_horizontal_faces_file + ".txt")
     ):
         # get image wall data
-        verts = read_from_file(path_to_wall_vertical_verts_file)
-        faces = read_from_file(path_to_wall_vertical_faces_file)
+        walls = read_from_file(path_to_wall_vertical_verts_file)
+        # verts = read_from_file(path_to_wall_vertical_verts_file)
+        # faces = read_from_file(path_to_wall_vertical_faces_file)
 
         # Create mesh from data
         boxcount = 0
         wallcount = 0
 
-        # Create parent
-        wall_parent, _ = init_object("Walls")
+        # # Create parent
+        # wall_parent, _ = init_object("Walls")
 
-        for walls in verts:
-            boxname = "Box" + str(boxcount)
-            for wall in walls:
-                wallname = "Wall" + str(wallcount)
+        # Create a wall collection
+        wall_collection = bpy.data.collections.new("Walls")
+        bpy.context.scene.collection.children.link(wall_collection)  # Link the new collection to the scene
 
-                obj = create_custom_mesh(
-                    boxname + wallname,
-                    wall,
-                    faces,
-                    cen=cen,
-                    mat=create_mat((0.5, 0.5, 0.5, 1)),
-                )
-                obj.parent = wall_parent
+        # Create individual walls
+        for wall in walls:
+            verts_ = wall['verts']
+            height_ = wall['height']
+            # Create a new mesh
+            mesh = bpy.data.meshes.new("Wall_Mesh")
 
-                wallcount += 1
-            boxcount += 1
+            # Create a new object that uses the mesh
+            obj = bpy.data.objects.new("Wall_Object", mesh)
 
-        # get image top wall data
-        verts = read_from_file(path_to_wall_horizontal_verts_file)
-        faces = read_from_file(path_to_wall_horizontal_faces_file)
+            # Add the object to the wall collection
+            wall_collection.objects.link(obj)
 
-        # Create mesh from data
-        boxcount = 0
-        wallcount = 0
+            # Make the new object the active object
+            bpy.context.view_layer.objects.active = obj
 
-        for i in range(0, len(verts)):
-            roomname = "VertWalls" + str(i)
-            obj = create_custom_mesh(
-                roomname,
-                verts[i],
-                faces[i],
-                cen=cen,
-                mat=create_mat((0.5, 0.5, 0.5, 1)),
-            )
-            obj.parent = wall_parent
+            # Change to edit mode to modify the object
+            bpy.ops.object.mode_set(mode='EDIT')
+            bm = bmesh.new()
+            bm.from_mesh(mesh)
 
-        wall_parent.parent = parent
+            # Add the vertices to the bmesh
+            for v in verts_:
+                bm.verts.new(v)
+
+            # Update the bmesh to mesh data
+            bm.verts.ensure_lookup_table()
+            bm.edges.ensure_lookup_table()
+
+            # Create edges and faces
+            for i in range(len(bm.verts)):
+                next_index = (i + 1) % len(bm.verts)  # Ensures the loop closes
+                bm.edges.new((bm.verts[i], bm.verts[next_index]))
+            bm.faces.new(bm.verts)
+
+            # Update the bmesh to the mesh data
+            bpy.ops.object.mode_set(mode='OBJECT')
+            bm.to_mesh(mesh)
+            bm.free()  # Free and prevent further access
+
+            # Switch to edit mode to use bmesh for extrusion
+            bpy.ops.object.mode_set(mode='EDIT')
+            bm = bmesh.from_edit_mesh(mesh)
+
+            # Select all faces to prepare for extrusion
+            for face in bm.faces:
+                face.select = True
+
+            # Extrude the faces
+            extruded = bmesh.ops.extrude_face_region(bm, geom=bm.faces[:])
+
+            # Move the extruded faces along the Z axis
+            translate_vec = (0, 0, height_)  # Change the Z value for different extrusion lengths
+            bmesh.ops.translate(bm, vec=translate_vec, verts=[v for v in extruded['geom'] if isinstance(v, bmesh.types.BMVert)])
+
+            # Update the mesh from bmesh
+            bmesh.update_edit_mesh(mesh)
+
+            # Return to object mode
+            bpy.ops.object.mode_set(mode='OBJECT')
 
     """
-    Create Windows
+    Create Window Walls
     """
     if (
         os.path.isfile(path_to_windows_vertical_verts_file + ".txt")
-        and os.path.isfile(path_to_windows_vertical_faces_file + ".txt")
-        and os.path.isfile(path_to_windows_horizontal_verts_file + ".txt")
-        and os.path.isfile(path_to_windows_horizontal_faces_file + ".txt")
+        # and os.path.isfile(path_to_windows_vertical_faces_file + ".txt")
+        # and os.path.isfile(path_to_windows_horizontal_verts_file + ".txt")
+        # and os.path.isfile(path_to_windows_horizontal_faces_file + ".txt")
     ):
         # get image wall data
-        verts = read_from_file(path_to_windows_vertical_verts_file)
-        faces = read_from_file(path_to_windows_vertical_faces_file)
+        window_walls = read_from_file(path_to_windows_vertical_verts_file)
+        # verts = read_from_file(path_to_windows_vertical_verts_file)
+        # faces = read_from_file(path_to_windows_vertical_faces_file)
 
         # Create mesh from data
         boxcount = 0
         wallcount = 0
 
         # Create parent
-        wall_parent, _ = init_object("Windows")
+        # wall_parent, _ = init_object("Windows")
 
-        for walls in verts:
-            boxname = "Box" + str(boxcount)
-            for wall in walls:
-                wallname = "Wall" + str(wallcount)
+        # Maybe dont need this as we can add the opaque portions of windows to wall collection
+        # window_collection = bpy.data.collections.new("Windows")
+        # bpy.context.scene.collection.children.link(window_collection)  # Link the new collection to the scene
 
-                obj = create_custom_mesh(
-                    boxname + wallname,
-                    wall,
-                    faces,
-                    cen=cen,
-                    mat=create_mat((0.5, 0.5, 0.5, 1)),
-                )
-                obj.parent = wall_parent
+        for wall in window_walls:
 
-                wallcount += 1
-            boxcount += 1
+            verts_ = wall['verts']
+            height_ = wall['height']
 
-        # get windows
-        verts = read_from_file(path_to_windows_horizontal_verts_file)
-        faces = read_from_file(path_to_windows_horizontal_faces_file)
+            # Create a new mesh
+            mesh = bpy.data.meshes.new("WindowWall_Mesh")
 
-        # Create mesh from data
-        boxcount = 0
-        wallcount = 0
+            # Create a new object that uses the mesh
+            obj = bpy.data.objects.new("WindowWall_Object", mesh)
 
-        for i in range(0, len(verts)):
-            roomname = "VertWindow" + str(i)
-            obj = create_custom_mesh(
-                roomname,
-                verts[i],
-                faces[i],
-                cen=cen,
-                mat=create_mat((0.5, 0.5, 0.5, 1)),
-            )
-            obj.parent = wall_parent
+            # Add the object to the wall collection
+            wall_collection.objects.link(obj)
 
-        wall_parent.parent = parent
+            # Make the new object the active object
+            bpy.context.view_layer.objects.active = obj
+
+            # Change to edit mode to modify the object
+            bpy.ops.object.mode_set(mode='EDIT')
+            bm = bmesh.new()
+            bm.from_mesh(mesh)
+
+            # Add the vertices to the bmesh
+            for v in verts_:
+                bm.verts.new(v)
+
+            # Update the bmesh to mesh data
+            bm.verts.ensure_lookup_table()
+            bm.edges.ensure_lookup_table()
+
+            # Create edges and faces
+            for i in range(len(bm.verts)):
+                next_index = (i + 1) % len(bm.verts)  # Ensures the loop closes
+                bm.edges.new((bm.verts[i], bm.verts[next_index]))
+            bm.faces.new(bm.verts)
+
+            # Update the bmesh to the mesh data
+            bpy.ops.object.mode_set(mode='OBJECT')
+            bm.to_mesh(mesh)
+            bm.free()  # Free and prevent further access
+
+            # Switch to edit mode to use bmesh for extrusion
+            bpy.ops.object.mode_set(mode='EDIT')
+            bm = bmesh.from_edit_mesh(mesh)
+
+            # Select all faces to prepare for extrusion
+            for face in bm.faces:
+                face.select = True
+
+            # Extrude the faces
+            extruded = bmesh.ops.extrude_face_region(bm, geom=bm.faces[:])
+
+            # Move the extruded faces along the Z axis
+            translate_vec = (0, 0, height_)  # Change the Z value for different extrusion lengths
+            bmesh.ops.translate(bm, vec=translate_vec, verts=[v for v in extruded['geom'] if isinstance(v, bmesh.types.BMVert)])
+
+            # Update the mesh from bmesh
+            bmesh.update_edit_mesh(mesh)
+
+            # Return to object mode
+            bpy.ops.object.mode_set(mode='OBJECT')
+
+        #     #######################################
+        #     boxname = "Box" + str(boxcount)
+        #     for wall in walls:
+        #         wallname = "Wall" + str(wallcount)
+
+        #         obj = create_custom_mesh(
+        #             boxname + wallname,
+        #             wall,
+        #             faces,
+        #             cen=cen,
+        #             mat=create_mat((0.5, 0.5, 0.5, 1)),
+        #         )
+        #         obj.parent = wall_parent
+
+        #         wallcount += 1
+        #     boxcount += 1
+
+        # # get windows
+        # verts = read_from_file(path_to_windows_horizontal_verts_file)
+        # faces = read_from_file(path_to_windows_horizontal_faces_file)
+
+        # # Create mesh from data
+        # boxcount = 0
+        # wallcount = 0
+
+        # for i in range(0, len(verts)):
+        #     roomname = "VertWindow" + str(i)
+        #     obj = create_custom_mesh(
+        #         roomname,
+        #         verts[i],
+        #         faces[i],
+        #         cen=cen,
+        #         mat=create_mat((0.5, 0.5, 0.5, 1)),
+        #     )
+        #     obj.parent = wall_parent
+
+        # wall_parent.parent = parent
 
     """
     Create Doors

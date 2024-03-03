@@ -70,7 +70,7 @@ if __name__ == "__main__":
     """
     Do not change variables in this file but rather in ./config.ini or ./FloorplanToBlenderLib/const.py
     """
-    dialog.figlet()
+    # dialog.figlet()
     image_path = ""
     blender_install_path = ""
     data_folder = const.BASE_PATH
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     image_paths = []
     program_path = os.path.dirname(os.path.realpath(__file__))
     blender_script_path = const.BLENDER_SCRIPT_PATH
-    dialog.init()
+    # dialog.init()
     data_paths = list()
 
     # Detect where/if blender is installed on pc
@@ -91,17 +91,18 @@ if __name__ == "__main__":
     if auto_blender_install_path is not None:
         blender_install_path = auto_blender_install_path
 
-    var = input(
-        "Please enter your blender installation path [default = "
-        + blender_install_path
-        + "]: "
-    )
-    if var:
-        blender_install_path = var
+    # var = input(
+    #     "Please enter your blender installation path [default = "
+    #     + blender_install_path
+    #     + "]: "
+    # )
+    # if var:
+    #     blender_install_path = var
 
-    var = input(
-        "Do you want to build from StackingFile or ConfigFile list ? [default = ConfigFile]: "
-    )
+    # var = input(
+    #     "Do you want to build from StackingFile or ConfigFile list ? [default = ConfigFile]: "
+    # )
+    var = "Y"
     if var in ["N", "n", "StackingFile", "stacking", "stackingfile"]:
         stacking_def_path = "./Stacking/all_separated_example.txt"
         var = input(f"Enter path to Stacking file : [default = {stacking_def_path}]: ")
@@ -120,11 +121,12 @@ if __name__ == "__main__":
     else:
 
         config_path = "./Configs/default.ini"
-        var = input(
-            "Use default config or import from file paths separated by space [default = "
-            + config_path
-            + "]: "
-        )
+        # var = input(
+        #     "Use default config or import from file paths separated by space [default = "
+        #     + config_path
+        #     + "]: "
+        # )
+        var = False
 
         if var:
             config_path = var
@@ -135,26 +137,26 @@ if __name__ == "__main__":
         else:
             floorplans.append(floorplan.new_floorplan(config_path))
 
-        var = input("Do you want to set images to use in each config file? [N/y]: ")
-        if var in ["y", "Y"]:
-            for floorplan in floorplans:
-                var = input(
-                    "For config file "
-                    + floorplan.conf
-                    + " write path for image to use "
-                    + "[Default="
-                    + floorplan.image_path
-                    + "]:"
-                )
-                if var:  # TODO: test this
-                    floorplan.image_path = var
-        print("")
-        var = input(
-            "This program is about to run and create blender3d project, continue? : "
-        )
-        if var:
-            print("Program stopped.")
-            exit(0)
+        # var = input("Do you want to set images to use in each config file? [N/y]: ")
+        # if var in ["y", "Y"]:
+        #     for floorplan in floorplans:
+        #         var = input(
+        #             "For config file "
+        #             + floorplan.conf
+        #             + " write path for image to use "
+        #             + "[Default="
+        #             + floorplan.image_path
+        #             + "]:"
+        #         )
+        #         if var:  # TODO: test this
+        #             floorplan.image_path = var
+        # print("")
+        # var = input(
+        #     "This program is about to run and create blender3d project, continue? : "
+        # )
+        # if var:
+        #     print("Program stopped.")
+        #     exit(0)
 
         print("")
         print("Generate datafiles in folder: Data")
@@ -162,7 +164,8 @@ if __name__ == "__main__":
         print("Clean datafiles")
 
         print("")
-        var = input("Clear all cached data before run: [default = yes] : ")
+        # var = input("Clear all cached data before run: [default = yes] : ")
+        var = "yes"
 
         if not var or var.lower() == "yes" or var.lower() == "y":
             IO.clean_data_folder(data_folder)
@@ -182,7 +185,7 @@ if __name__ == "__main__":
     else:
         create_blender_project(data_paths)
 
-    print("")
-    print("Done, Have a nice day!")
+    # print("")
+    # print("Done, Have a nice day!")
 
-    dialog.end_copyright()
+    # dialog.end_copyright()

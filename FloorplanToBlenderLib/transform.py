@@ -112,7 +112,6 @@ def verts_to_poslist(verts):
     @Return res, list of position
     """
     list_of_elements = flatten_iterative_safe(verts, [])  # TODO: this stopped working!
-
     res = []
     i = 0
     while i < len(list_of_elements) - 2:  # Might miss one vertex here!
@@ -185,6 +184,54 @@ def create_4xn_verts_and_faces(
         faces.append([(temp)])
 
     return verts, faces, counter
+
+def create_2d_face_verts(
+    boxes, height=1, scale=np.array([1, 1, 1]), pixelscale=100, ground=const.WALL_GROUND
+):
+    """
+    Create verts for face in 2d, mesh equivalent of 2d floor plan
+    @Param boxes,
+    @Param height,
+    @Param scale,
+    @Return verts - as [[wall1],[wall2],...] numpy array, faces - as array to use on all boxes, wall_amount - as integer
+    Use the result by looping over boxes in verts, and create mesh for each box with same face and pos
+    See create_custom_mesh in floorplan code
+    This functions is used to create vertical objects
+    """
+    counter = 0
+    verts = []
+    for box in boxes:
+        box_verts = []
+        for index in range(0, len(box)):
+            temp_verts = []
+            # Get current
+            current = box[index][0]
+
+            # is last, link to first
+            if len(box) - 1 >= index + 1:
+                next_vert = box[index + 1][0]
+            else:
+                next_vert = box[0][0]
+                # link to first pos
+
+            # Create all 3d poses for each wall
+            temp_verts.extend(
+                [current[0] / pixelscale, current[1] / pixelscale, ground]
+            )
+            # temp_verts.extend(
+            #     [((next_vert[0]) / pixelscale, (next_vert[1]) / pixelscale, ground)]
+            # )
+
+            # add wall verts to verts
+            box_verts.extend([temp_verts])
+
+            # wall counter
+            counter += 1
+
+        verts.extend([box_verts])
+
+    # faces = [(0, 1, 3, 2)]
+    return verts, counter
 
 
 def create_nx4_verts_and_faces(
