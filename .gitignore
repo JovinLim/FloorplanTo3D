@@ -138,3 +138,5 @@ Data/
 
 # Ignore jupyter
 .ipynb_checkpoints
+# Local Netlify folder
+.netlify
