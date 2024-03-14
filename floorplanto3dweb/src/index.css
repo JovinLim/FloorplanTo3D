@@ -15,3 +15,12 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.speckle-login {
+  z-index: 50;
+  @apply rounded-2xl border-2 border-gray-300 bg-blue-700 py-3 px-5 w-32 text-white font-medium
+}
+
+.speckle-login-hidden {
+  @apply hidden
+}
